@@ -2,13 +2,13 @@ from setuptools import setup
 setup(
   name = 'modulepy',
   packages = ['modulepy'],
-  version = '0.9',
+  version = '0.9.1',
   license='MIT',
   description = 'Provides the utility of the module command from within python.',
   author = 'Tommi Kabelitz',
   author_email = 'tommi.kabelitz@gmail.com',
   url = 'https://github.com/TommiKabelitz',
-  download_url = "https://github.com/TommiKabelitz/modulepy/archive/refs/tags/v0.9.tar.gz",
+  download_url = "https://github.com/TommiKabelitz/modulepy/archive/refs/tags/v0.9.1.tar.gz",
   keywords = ['Environment', 'Modules'],
   install_requires=[],
   classifiers=[
