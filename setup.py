@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 setup(
-  name = 'modulepy',
+  name = 'easymod',
   packages = find_packages(),
   version = '0.9.2',
   license='MIT',
@@ -8,7 +8,7 @@ setup(
   author = 'Tommi Kabelitz',
   author_email = 'tommi.kabelitz@gmail.com',
   url = 'https://github.com/TommiKabelitz',
-  download_url = "https://github.com/TommiKabelitz/modulepy/archive/refs/tags/v0.9.2.tar.gz",
+  download_url = "https://github.com/TommiKabelitz/easymod/archive/refs/tags/v0.9.2.tar.gz",
   keywords = ['Environment', 'Modules'],
   install_requires=[],
   classifiers=[
