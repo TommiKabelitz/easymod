@@ -1,1 +1,1 @@
-from modulepy import Module
+from .core import Module
