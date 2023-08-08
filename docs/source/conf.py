@@ -14,6 +14,14 @@ release = '0.9.3'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+import pathlib
+import sys
+sys.path.insert(
+    0, 
+    str(pathlib.Path(__file__).parents[2].resolve()),
+)
+
+
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
 
 templates_path = ['_templates']

@@ -2,8 +2,43 @@ import os
 import pathlib
 import re
 
+
 class Module:
-    # Default sub-commands. This is the list of sub-commands in Modules/v4.3.0
+    """
+    The Module object is a simple interface to the sub-commands and environment variables associated with the module command.
+
+    Parameters
+    ----------
+    home : os.PathLike, optional
+        Path to the home directory for the module command, optional.
+    init_file: os.PathLike, optional
+        Path to the Modules initialisation file, required only if the initialisation file cannot be found automatically.
+
+    Raises
+    ------
+    ValueError
+        If home not passed, a ValueError is raised if the home directory for the module command cannot be found through the environment variable 'MODULESHOME'.
+    
+    Examples
+    --------
+    Upon initialisation, module commands are accessed through the result the Module object as if they were class methods. For example
+
+    >>> module = Module()
+    >>> module.list()
+    No Modulefiles Currently Loaded.
+    >>> module.load("openmpi/4.1.5")
+    >>> module.list()
+    Currently Loaded Modulefiles:
+    1) openmpi/4.1.5
+
+    Module environment variables may be accessed through `environ`
+
+    >>> module = Module()
+    >>> module.environ["MODULE_CMD"]
+    /opt/Modules/v4.3.0/libexec/modulecmd.tcl
+    
+    """
+        
     sub_commands = [
         "help",
         "add",
@@ -44,9 +79,16 @@ class Module:
         "paths",
         "config",
     ]
-    # Default environment variables.
-    # This is the list of environment variables in Modules/v4.3.0
-    envinronment_variables = [
+    """
+    list: List of sub-commands that may be run by the module environment.
+    
+    The default list contains those that exist in v4.3.0. 
+    The list may be updated using `parse_man_file`.
+    See `Examples` for how to invoke a specific command as if it were a class
+    method.
+    """
+    
+    environment_variables = [
         "LOADEDMODULES",
         "MODULECONTACT",
         "MODULEPATH",
@@ -77,40 +119,15 @@ class Module:
         "MODULES_VERBOSITY",
         "_LMFILES_",
     ]
+    """
+    list: List of environment variables that may be set by the module environment.
+    
+    The default list contains those that exist in v4.3.0. 
+    The list may be updated using `parse_man_file`.
+    See `Examples` for how to access the values of these variables through `environ`.
+    """
 
     def __init__(self, home: os.PathLike = None, init_file: os.PathLike = None):
-        """
-        The Module object is a simple interface to the sub-commands and environment variables associated with the module command.
-
-        Upon initialisation, module commands are accessed through the result the Module object as if they were class methods. For example
-
-        >> module = Module()
-        >> module.list()
-        No Modulefiles Currently Loaded.
-        >> module.load("openmpi/4.1.5")
-        >> module.list()
-        Currently Loaded Modulefiles:
-         1) openmpi/4.1.5
-
-
-        Module environment variables may be accessed through the following
-
-        >> module = Module()
-        >> module.environ["MODULE_CMD"]
-        /opt/Modules/v4.3.0/libexec/modulecmd.tcl
-
-        Parameters
-        ----------
-        home : os.PathLike, optional
-            Path to the home directory for the module command, optional.
-        init_file: os.PathLike, optional
-            Path to the Modules initialisation file, required only if the initialisation file cannot be found automatically.
-            
-        Raises
-        ------
-        ValueError
-            If home not passed, a ValueError is raised if the home directory for the module command cannot be found through the environment variable 'MODULESHOME'.
-        """
         if home is not None:
             self.modules_home = pathlib.Path(home)
         else:
@@ -123,7 +140,7 @@ class Module:
 
         # Attempts to find the init file based on modules_home
         self.set_init_file(init_file)
-        
+
         # Initialise modules command, variables from init script are saved into global
         # scope here
         with open(self.init_file, "r") as f:
@@ -133,7 +150,6 @@ class Module:
             self.module = globals()["module"]
         except KeyError:
             raise EnvironmentError("The module environment could not be initialised.")
-
 
     def set_init_file(self, init_file: os.PathLike = None):
         """
@@ -156,20 +172,23 @@ class Module:
         if init_file is not None:
             self.init_file = pathlib.Path(init_file)
             if not self.init_file.exists():
-                raise FileNotFoundError(f"Module initialisation file not found\n{self.init_file}")
+                raise FileNotFoundError(
+                    f"Module initialisation file not found\n{self.init_file}"
+                )
             return
-        
+
         # Double asterisk glob allows the init directory to be buried within the directory tree
         possible_init_files = list(self.modules_home.glob("**/init/*python*.py"))
-        
+
         if len(possible_init_files) == 0:
             raise FileNotFoundError("Modules initialisation file could not be found. ")
         elif len(possible_init_files) > 1:
             files = ", ".join(str(p) for p in possible_init_files)
-            raise ValueError("Multiple possible Module initialisation files found\n%s" % files)
-        
+            raise ValueError(
+                "Multiple possible Module initialisation files found\n%s" % files
+            )
+
         self.init_file = possible_init_files[0]
-        
 
     def parse_man_file(self, man_file: os.PathLike = None):
         """
