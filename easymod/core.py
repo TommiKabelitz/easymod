@@ -1,4 +1,5 @@
 import os
+import pathlib
 import re
 
 class Module:
@@ -77,7 +78,7 @@ class Module:
         "_LMFILES_",
     ]
 
-    def __init__(self, home: os.PathLike = None):
+    def __init__(self, home: os.PathLike = None, init_file: os.PathLike = None):
         """
         The Module object is a simple interface to the sub-commands and environment variables associated with the module command.
 
@@ -101,29 +102,74 @@ class Module:
         Parameters
         ----------
         home : os.PathLike, optional
-            Path to the home directory for the module command, optional, by default None.
-
+            Path to the home directory for the module command, optional.
+        init_file: os.PathLike, optional
+            Path to the Modules initialisation file, required only if the initialisation file cannot be found automatically.
+            
         Raises
         ------
         ValueError
             If home not passed, a ValueError is raised if the home directory for the module command cannot be found through the environment variable 'MODULESHOME'.
         """
         if home is not None:
-            self.modules_home = home
+            self.modules_home = pathlib.Path(home)
         else:
             try:
-                self.modules_home = os.environ["MODULESHOME"]
+                self.modules_home = pathlib.Path(os.environ["MODULESHOME"])
             except KeyError:
                 raise ValueError(
                     "Cannot automatically set modules_home. Environment variable MODULESHOME unset. Pass module home directory to Module"
                 )
 
+        # Attempts to find the init file based on modules_home
+        self.set_init_file(init_file)
+        
         # Initialise modules command, variables from init script are saved into global
         # scope here
-        with open(os.path.join(self.modules_home, "init", "python.py"), "r") as f:
+        with open(self.init_file, "r") as f:
             exec(f.read(), globals())
         # Grabbing the resulting module function
-        self.module = globals()["module"]
+        try:
+            self.module = globals()["module"]
+        except KeyError:
+            raise EnvironmentError("The module environment could not be initialised.")
+
+
+    def set_init_file(self, init_file: os.PathLike = None):
+        """
+        Set the path to the module initialisation file.
+
+        If init_file is not passed, self.modules_home is searched for an init file.
+
+        Parameters
+        ----------
+        init_file : os.PathLike, optional
+            Path to the initialisation file, by default None
+
+        Raises
+        ------
+        FileNotFoundError
+            If the initialisation file cannot be found.
+        ValueError
+            If multiple possible initialisation files are found.
+        """
+        if init_file is not None:
+            self.init_file = pathlib.Path(init_file)
+            if not self.init_file.exists():
+                raise FileNotFoundError(f"Module initialisation file not found\n{self.init_file}")
+            return
+        
+        # Double asterisk glob allows the init directory to be buried within the directory tree
+        possible_init_files = list(self.modules_home.glob("**/init/*python*.py"))
+        
+        if len(possible_init_files) == 0:
+            raise FileNotFoundError("Modules initialisation file could not be found. ")
+        elif len(possible_init_files) > 1:
+            files = ", ".join(str(p) for p in possible_init_files)
+            raise ValueError("Multiple possible Module initialisation files found\n%s" % files)
+        
+        self.init_file = possible_init_files[0]
+        
 
     def parse_man_file(self, man_file: os.PathLike = None):
         """
